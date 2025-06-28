@@ -3,6 +3,7 @@ services:
     name: vidload
     env: node
     buildCommand: |
+      pip install --upgrade pip
       pip install -r requirements.txt
       yarn
     startCommand: node server.js
