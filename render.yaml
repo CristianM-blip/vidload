@@ -1,2 +1,8 @@
-prebuild:
-  - pip install -r requirements.txt
+services:
+  - type: web
+    name: vidload
+    env: node
+    buildCommand: |
+      pip install -r requirements.txt
+      yarn
+    startCommand: node server.js
