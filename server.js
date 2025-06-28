@@ -20,14 +20,20 @@ function detectPlatform(url) {
   return 'unknown';
 }
 
+function getCookiesPath(platform) {
+  return path.join(__dirname, 'cookies.txt');
+}
+
 app.post('/get-info', async (req, res) => {
   console.log('DEBUG POST /get-info', req.body, new Date().toISOString());
   try {
     const { url } = req.body;
     console.log('DEBUG yt_dlp call', url);
-    const { stdout } = await execAsync(`python -m yt_dlp -J "${url}" --no-warnings`);
-    const info = JSON.parse(stdout);
     const platform = detectPlatform(url);
+    const cookiesPath = getCookiesPath(platform);
+    const cookieArg = fs.existsSync(cookiesPath) ? ` --cookies "${cookiesPath}"` : '';
+    const { stdout } = await execAsync(`python -m yt_dlp -J "${url}" --no-warnings${cookieArg}`);
+    const info = JSON.parse(stdout);
     let formats = [];
     if (platform === 'youtube') {
       formats = info.formats
@@ -76,6 +82,8 @@ app.post('/yt-dlp-download', async (req, res) => {
   const dir = path.join(__dirname, 'downloads');
   if (!fs.existsSync(dir)) fs.mkdirSync(dir);
   const platform = detectPlatform(url);
+  const cookiesPath = getCookiesPath(platform);
+  const cookieParam = fs.existsSync(cookiesPath) ? ['--cookies', cookiesPath] : [];
 
   let outPattern = path.join(dir, `${safeTitle}.mp4`);
   let ytdlpArgs = [
@@ -84,7 +92,8 @@ app.post('/yt-dlp-download', async (req, res) => {
     '-o', outPattern,
     '--merge-output-format', 'mp4',
     '--no-playlist',
-    '--no-warnings'
+    '--no-warnings',
+    ...cookieParam
   ];
 
   if (platform === 'youtube' && asMp3) {
@@ -95,7 +104,8 @@ app.post('/yt-dlp-download', async (req, res) => {
       url,
       '-o', outPattern,
       '--no-playlist',
-      '--no-warnings'
+      '--no-warnings',
+      ...cookieParam
     ];
   } else if ((platform === 'youtube' || platform === 'facebook' || platform === 'tiktok') && height) {
     ytdlpArgs.splice(3, 0, '-f', `bestvideo[ext=mp4][height=${height}]+bestaudio/best[ext=m4a]/best`);
