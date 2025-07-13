@@ -23,7 +23,7 @@ function detectPlatform(url) {
 app.post('/get-info', async (req, res) => {
   try {
     const { url } = req.body;
-    const { stdout } = await execAsync(`python -m yt_dlp -J "${url}" --no-warnings`);
+    const { stdout, stderr } = await execAsync(`python3 -m yt_dlp -J "${url}" --no-warnings`);
     const info = JSON.parse(stdout);
     const platform = detectPlatform(url);
     let formats = [];
@@ -61,7 +61,8 @@ app.post('/get-info', async (req, res) => {
       platform
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Error en /get-info:', error);
+    res.status(500).json({ error: error.message, details: error });
   }
 });
 
@@ -105,7 +106,7 @@ app.post('/yt-dlp-download', async (req, res) => {
     ];
   }
 
-  const ytdlp = spawn('python', ytdlpArgs);
+  const ytdlp = spawn('python3', ytdlpArgs);
 
   ytdlp.on('close', (code) => {
     if (code === 0) {
